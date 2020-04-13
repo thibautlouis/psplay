@@ -130,7 +130,7 @@ def compute_ps(patch,
         del ps_mask
     
     fsky = enmap.area(window.data.shape, window.data.wcs) / 4. / np.pi
-    fsky *= np.sum(window.data)/window.data.size
+    fsky *= np.mean(window.data)
     
     if beam is not None:
         beam_data = np.loadtxt(beam)
