@@ -1,4 +1,4 @@
-from pspy import so_map, so_window, sph_tools, so_mcm, pspy_utils, so_spectra, so_cov #flat_tools
+from pspy import so_map, so_window, sph_tools, so_mcm, pspy_utils, so_spectra, so_cov, flat_tools
 from pixell import enmap
 import time
 import numpy as np, pylab as plt
@@ -10,7 +10,7 @@ map1_info = {"name":"split1_IQU.fits", "data_type":"IQU", "id":"split1", "cal" :
 source_mask = {"name":"source_mask.fits", "apo_type":"C1" , "apo_radius": 0.3}
 galactic_mask = "mask_galactic_equatorial_car_halfarcmin.fits"
 
-patch = {"patch_type": "Rectangle", "patch_coordinate": [[-5,-20],[5,20]]}
+patch = {"patch_type": "Rectangle", "patch_coordinate": [[-10,-20],[10,20]]}
 
 maps_info_list = [map0_info, map1_info]
 
@@ -195,8 +195,8 @@ def compute_ps(patch,
             
         elif ps_method == "2dflat":
             print ("FFT of %s in the patch" % map_info["name"])
-            fts = flat_tools.fft(windowed_map, lmax=lmax+50)
-            ht_list += [fts]
+            ffts = flat_tools.get_ffts(split, window, lmax)
+            ht_list += [ffts]
 
         name_list += [map_info["id"]]
         
@@ -205,7 +205,11 @@ def compute_ps(patch,
     if (compute_T_only == True):
         spectra = None
     else:
-        spectra = ["TT", "TE", "TB", "ET", "BT", "EE", "EB", "BE", "BB"]
+        if ps_method == "master" or ps_method == "pseudo":
+            spectra = ["TT", "TE", "TB", "ET", "BT", "EE", "EB", "BE", "BB"]
+        elif ps_method == "2dflat":
+            spectra = ["II", "IQ", "IU", "QI", "QQ", "QU", "UI", "UQ", "UU"]
+
 
     ps_dict = {}
     spec_name_list = []
@@ -225,11 +229,18 @@ def compute_ps(patch,
                                                                 type=type,
                                                                 mbb_inv=mbb_inv,
                                                                 spectra=spectra)
+                                                                
+            elif ps_method == "2dflat":
+                ps_dict[spec_name] = flat_tools.power_from_fft(ht1, ht2)
             
             spec_name_list += [spec_name]
             
+    if ps_method == "2dflat":
+    
+        return spectra, spec_name_list, ps_dict
             
-    if (error_method_1d is not None) & (ps_method is not "2dflat"):
+            
+    if (error_method_1d is not None):
     
         cov_dict = {}
         
@@ -289,62 +300,23 @@ def compute_ps(patch,
      
      
 t = time.time()
-spectra, spec_name_list, lb, ps_dict, cov_dict = compute_ps(patch,
-                                                            maps_info_list,
-                                                            ps_method = "master",
-                                                            error_method_1d = "master",
-                                                            beam=None,
-                                                            binning_file=None,
-                                                            bin_size=40,
-                                                            type="Dl",
-                                                            source_mask = source_mask,
-                                                            galactic_mask = galactic_mask,
-                                                            apo_radius_survey=1,
-                                                            compute_T_only = False,
-                                                            lmax = 4000)
+spectra, spec_name_list, ps_dict = compute_ps(patch,
+                                              maps_info_list,
+                                              ps_method = "2dflat",
+                                              beam=None,
+                                              binning_file=None,
+                                              bin_size=40,
+                                              type="Dl",
+                                              source_mask = source_mask,
+                                              galactic_mask = galactic_mask,
+                                              apo_radius_survey=1,
+                                              compute_T_only = False,
+                                              lmax = 1000)
+                                                        
 print ("time to compute exact Cl: %0.2f"% (time.time()-t))
 
-
-t = time.time()
-spectra, spec_name_list, lb, ps_dict_threshold, cov_dict_threshold = compute_ps(patch,
-                                                                              maps_info_list,
-                                                                              ps_method = "master",
-                                                                              error_method_1d = "master",
-                                                                              beam=None,
-                                                                              binning_file=None,
-                                                                              bin_size=40,
-                                                                              type="Dl",
-                                                                              source_mask = source_mask,
-                                                                              galactic_mask = galactic_mask,
-                                                                              apo_radius_survey=1,
-                                                                              compute_T_only = False,
-                                                                              lmax = 4000,
-                                                                              master_threshold= 500)
-print ("time to compute threshod Cl: %0.2f"% (time.time()-t))
+ps_dict["split0xsplit1"].plot(power_of_ell=2)
 
 
 
-
-
-
-spec_name_list = ["split0xsplit1"]
-if spectra is None:
-    for spec_name in spec_name_list:
-        plt.semilogy()
-        plt.errorbar(lb, ps_dict[spec_name], np.sqrt(np.diag(cov_dict[spec_name])), fmt = ".")
-        plt.errorbar(lb - 5, ps_dict_threshold[spec_name], np.sqrt(np.diag(cov_dict_threshold[spec_name])), fmt = ".")
-
-    plt.legend()
-    plt.show()
-    
-else:
-    for spec in spectra:
-        for spec_name in spec_name_list:
-            if spec=="TT":
-                plt.semilogy()
-            plt.errorbar(lb, ps_dict[spec_name][spec], np.sqrt(np.diag(cov_dict[spec_name][spec])), fmt = ".")
-            plt.errorbar(lb - 5, ps_dict_threshold[spec_name][spec], np.sqrt(np.diag(cov_dict_threshold[spec_name][spec])), fmt = ".")
-
-        plt.legend()
-        plt.show()
 
