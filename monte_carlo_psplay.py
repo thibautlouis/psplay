@@ -5,7 +5,7 @@ from pspy import so_map, pspy_utils
 
 # Sim parameters
 clfile = "bode_almost_wmap5_lmax_1e4_lensedCls_startAt2.dat"
-n_sims = 100
+n_sims = 20
 template_car = so_map.car_template(3, -10, 10, -10, 10, 0.5)
 rms_uKarcmin_T = 8
 map0_info = {"name":"split0_IQU.fits", "data_type":"IQU", "id":"split0", "cal" : None}
@@ -19,8 +19,8 @@ patch = {"patch_type": "Disk", "center": [0,0], "radius": 8}
 apo_radius_survey = 1
 
 # Spectra parameters
-ps_method = "master"
-error_method = "master"
+ps_method = "2dflat"
+error_method = None
 bin_size = 40
 compute_T_only = False
 lmax = 2000
@@ -83,28 +83,34 @@ for iii in range(n_sims):
     if iii == 0:
         all_dict = {spec: [] for spec in spectra}
     
-    for spec in spectra:
-        all_dict[spec] += [ps_dict["split0xsplit1"][spec]]
+    if ps_method == "2dflat":
+        for spec in spectra:
+            all_dict[spec] += [ps_dict["split0xsplit1"].powermap[spec]]
+    else:
+        for spec in spectra:
+            all_dict[spec] += [ps_dict["split0xsplit1"][spec]]
         
     print ("sim %03d done in : %0.2f s "  % (iii,time.time()-t))
 
 
-clth = {}
-lth, clth["TT"], clth["EE"], clth["BB"], clth["TE"] = np.loadtxt(clfile, unpack=True)
-clth["ET"] = clth["TE"]
-clth["EB"] = clth["TE"]*0
-clth["BE"] = clth["TE"]*0
-clth["BT"] = clth["TE"]*0
-clth["TB"] = clth["TE"]*0
 
+if ps_method is not "2dflat":
 
-for spec in spectra:
-    mean = np.mean(all_dict[spec], axis=0)
-    std = np.std(all_dict[spec], axis=0)
-    if ps_method is not "2dflat":
+    clth = {}
+    lth, clth["TT"], clth["EE"], clth["BB"], clth["TE"] = np.loadtxt(clfile, unpack=True)
+    clth["ET"] = clth["TE"]
+    for spec in ["EB", "BE", "BT", "TB"]:
+        clth[spec] = clth["TE"]*0
+
+    for spec in spectra:
+        mean = np.mean(all_dict[spec], axis=0)
+        std = np.std(all_dict[spec], axis=0)
         plt.plot(lth[:lmax+50], clth[spec][:lmax+50])
         plt.errorbar(ells, mean, std, fmt= ".")
         plt.show()
-    else:
-        plt.matshow(mean)
-        plt.show()
+
+else:
+
+    for spec in spectra:
+        ps_dict["split0xsplit1"].powermap[spec] = np.mean(all_dict[spec], axis=0)
+    ps_dict["split0xsplit1"].plot()

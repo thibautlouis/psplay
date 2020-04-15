@@ -38,16 +38,15 @@ spectra, spec_name_list, lb, ps_dict, cov_dict = psplay.compute_ps(patch,
 
 print("time: %f s" % (time.time()- t))
 
-clth = {}
-lth, clth["TT"], clth["EE"], clth["BB"], clth["TE"] = np.loadtxt("bode_almost_wmap5_lmax_1e4_lensedCls_startAt2.dat", unpack=True)
-clth["ET"] = clth["TE"]
-clth["EB"] = clth["TE"]*0
-clth["BE"] = clth["TE"]*0
-clth["BT"] = clth["TE"]*0
-clth["TB"] = clth["TE"]*0
 
 
 if ps_method == "master" or ps_method == "pseudo":
+
+    clth = {}
+    lth, clth["TT"], clth["EE"], clth["BB"], clth["TE"] = np.loadtxt("bode_almost_wmap5_lmax_1e4_lensedCls_startAt2.dat", unpack=True)
+    clth["ET"] = clth["TE"]
+    for spec in ["EB", "BE", "BT", "TB"]:
+        clth[spec] = clth["TE"]*0
 
     for spec in spectra:
         
@@ -61,7 +60,7 @@ if ps_method == "master" or ps_method == "pseudo":
         plt.show()
 
 elif ps_method == "2dflat":
-    ps_dict["split0xsplit1"].plot(power_of_ell=2)
+    ps_dict["split0xsplit1"].plot()
 
 
 
