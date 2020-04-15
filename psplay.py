@@ -278,7 +278,7 @@ def get_spectra(window, maps_info_list, car_box, type, lmax, binning_file, ps_me
             
             
     if (compute_T_only == True):
-    # to make TT only behave the same as the other cases
+    # to make TT only behave the same as the other cases, make it a dictionnary
         if ps_method == "master" or ps_method == "pseudo":
             spectra = ["TT"]
             for spec_name in spec_name_list:
