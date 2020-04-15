@@ -312,7 +312,7 @@ def get_covariance(window, lmax, spec_name_list, ps_dict, binning_file, error_me
       the method for the computation of error
       can be "master" or "knox" for now
    master_threshold: integer
-     for approximating the coupling computation, threshold is the max |l1-l2| considered
+     for approximating the coupling computation, threshold is the max off diagonal considered
      in the calculation
    mbb_inv: 2d array
      the inverse mode coupling matrix, not in use for 2dflat
@@ -356,7 +356,11 @@ def get_covariance(window, lmax, spec_name_list, ps_dict, binning_file, error_me
                 cov_dict[name][X+Y] += so_cov.symmetrize(ps_dict["%sx%s"%(m1,m2)][X+Y]**2)
                 cov_dict[name][X+Y] *= coupling
                 cov_dict[name][X+Y] = np.dot(np.dot(mbb_inv, cov_dict[name][X+Y]), mbb_inv.T)
-                    
+    
+    
+    else:
+        cov_dict = None
+        
     return cov_dict
 
 def compute_ps(patch,
@@ -417,7 +421,7 @@ def compute_ps(patch,
       the maximum multipole to consider for the mcm computation (optional)
       lmax_pad should always be greater than lmax
     master_threshold: integer
-      for approximating the coupling computation, threshold is the max |l1-l2| considered
+      for approximating the coupling computation, threshold is the max off diagonal considered
       in the calculation
     """
 

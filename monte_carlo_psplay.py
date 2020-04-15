@@ -5,7 +5,7 @@ from pspy import so_map, pspy_utils
 
 # Sim parameters
 clfile = "bode_almost_wmap5_lmax_1e4_lensedCls_startAt2.dat"
-n_sims = 20
+n_sims = 100
 template_car = so_map.car_template(3, -10, 10, -10, 10, 0.5)
 rms_uKarcmin_T = 8
 map0_info = {"name":"split0_IQU.fits", "data_type":"IQU", "id":"split0", "cal" : None}
@@ -19,15 +19,15 @@ patch = {"patch_type": "Disk", "center": [0,0], "radius": 8}
 apo_radius_survey = 1
 
 # Spectra parameters
-ps_method = "2dflat"
-error_method = None
+ps_method = "master"
+error_method = "master"
 bin_size = 40
 compute_T_only = False
 lmax = 2000
 type = "Dl"
 master_threshold = None
 lmax_pad = None
-beam = None
+beam = None # Not ready yet
 
 
 pspy_utils.create_binning_file(bin_size=bin_size, n_bins=1000, file_name="binning.dat")
@@ -81,6 +81,21 @@ for iii in range(n_sims):
 
     
     if iii == 0:
+        if ps_method == "master" or ps_method == "pseudo":
+            if error_method is not None:
+                cov_dict = psplay.get_covariance(window,
+                                                 lmax,
+                                                 spec_name_list,
+                                                 ps_dict,
+                                                 binning_file,
+                                                 error_method=error_method,
+                                                 master_threshold=master_threshold,
+                                                 spectra=spectra,
+                                                 mbb_inv=mbb_inv,
+                                                 compute_T_only=compute_T_only)
+
+    
+    
         all_dict = {spec: [] for spec in spectra}
     
     if ps_method == "2dflat":
@@ -90,7 +105,7 @@ for iii in range(n_sims):
         for spec in spectra:
             all_dict[spec] += [ps_dict["split0xsplit1"][spec]]
         
-    print ("sim %03d done in : %0.2f s "  % (iii,time.time()-t))
+    print ("sim %03d done in : %0.2f s"  % (iii,time.time()-t))
 
 
 
@@ -108,7 +123,11 @@ if ps_method is not "2dflat":
         plt.plot(lth[:lmax+50], clth[spec][:lmax+50])
         plt.errorbar(ells, mean, std, fmt= ".")
         plt.show()
-
+        
+        plt.semilogy()
+        plt.errorbar(ells, std, fmt= ".")
+        plt.plot(ells, np.sqrt(np.diag(cov_dict["split0xsplit1"][spec])))
+        plt.show()
 else:
 
     for spec in spectra:

@@ -19,7 +19,7 @@ error_method = "master"
 master_threshold = 500
 compute_T_only = True
 lmax = 1000
-       
+
 t=time.time()
 spectra, spec_name_list, lb, ps_dict, cov_dict = psplay.compute_ps(patch,
                                                                    maps_info_list,
