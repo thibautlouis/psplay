@@ -270,10 +270,20 @@ def get_spectra(window, maps_info_list, car_box, type, lmax, binning_file, ps_me
                                                                 mbb_inv=mbb_inv,
                                                                 spectra=spectra)
                                                                 
+                                                                
             elif ps_method == "2dflat":
                 ells, ps_dict[spec_name] = flat_tools.power_from_fft(ht1, ht2, type=type)
             
             spec_name_list += [spec_name]
+            
+            
+    if (compute_T_only == True):
+    # to make TT only behave the same as the other cases
+        if ps_method == "master" or ps_method == "pseudo":
+            spectra = ["TT"]
+            for spec_name in spec_name_list:
+                ps_dict[spec_name] = {"TT": ps_dict[spec_name]}
+    
             
     return spectra, spec_name_list, ells, ps_dict
 
@@ -317,53 +327,35 @@ def get_covariance(window, lmax, spec_name_list, ps_dict, binning_file, error_me
 
     fsky = enmap.area(window.data.shape, window.data.wcs) / 4. / np.pi
     fsky *= np.mean(window.data)
+    
+    if compute_T_only == False:
+        mbb_inv = mbb_inv["spin0xspin0"]
 
     cov_dict = {}
 
-    if compute_T_only == True:
-        if error_method == "Knox":
-            for name in spec_name_list:
-                m1, m2 = name.split("x")
-                prefac = 1 / ((2*bin_c+1) * fsky * bin_size)
-                cov_dict[name] = np.diag(prefac * (ps_dict["%sx%s"%(m1,m1)] * ps_dict["%sx%s"%(m2,m2)] + ps_dict["%sx%s"%(m1,m2)]**2))
-            
-        elif error_method == "master":
-            print("compute master error")
-            coupling_dict = so_cov.cov_coupling_spin0(window, lmax, niter=0, threshold=master_threshold)
-            coupling = so_cov.bin_mat(coupling_dict["TaTcTbTd"], binning_file, lmax)
-
-            for name in spec_name_list:
-                m1, m2 = name.split("x")
-                cov_dict[name] = so_cov.symmetrize(ps_dict["%sx%s"%(m1,m1)]) * so_cov.symmetrize(ps_dict["%sx%s"%(m2,m2)])
-                cov_dict[name] += so_cov.symmetrize(ps_dict["%sx%s"%(m1,m2)]**2)
-                cov_dict[name] *= coupling
-                cov_dict[name] = np.dot(np.dot(mbb_inv, cov_dict[name]), mbb_inv.T)
-
-    else:
-
-        if error_method == "Knox":
-            for name in spec_name_list:
-                m1, m2 = name.split("x")
-                cov_dict[name] = {}
-                for spec in spectra:
-                    X, Y = spec
-                    prefac = 1 / ((2 * bin_c + 1) * fsky * bin_size)
-                    cov_dict[name][X+Y] =  np.diag( prefac *  (ps_dict["%sx%s"%(m1,m1)][X+X] * ps_dict["%sx%s"%(m2,m2)][Y+Y] + ps_dict["%sx%s"%(m1,m2)][X+Y]**2))
+    if error_method == "Knox":
+        for name in spec_name_list:
+            m1, m2 = name.split("x")
+            cov_dict[name] = {}
+            for spec in spectra:
+                X, Y = spec
+                prefac = 1 / ((2 * bin_c + 1) * fsky * bin_size)
+                cov_dict[name][X+Y] =  np.diag( prefac *  (ps_dict["%sx%s"%(m1,m1)][X+X] * ps_dict["%sx%s"%(m2,m2)][Y+Y] + ps_dict["%sx%s"%(m1,m2)][X+Y]**2))
                 
-        elif error_method == "master":
-            print("compute master error")
-            coupling_dict = so_cov.cov_coupling_spin0(window, lmax, niter=0, threshold=master_threshold)
-            coupling = so_cov.bin_mat(coupling_dict["TaTcTbTd"], binning_file, lmax)
+    elif error_method == "master":
+        print("compute master error")
+        coupling_dict = so_cov.cov_coupling_spin0(window, lmax, niter=0, threshold=master_threshold)
+        coupling = so_cov.bin_mat(coupling_dict["TaTcTbTd"], binning_file, lmax)
 
-            for name in spec_name_list:
-                m1, m2 = name.split("x")
-                cov_dict[name] = {}
-                for spec in spectra:
-                    X, Y = spec
-                    cov_dict[name][X+Y] = so_cov.symmetrize(ps_dict["%sx%s"%(m1,m1)][X+X]) * so_cov.symmetrize(ps_dict["%sx%s"%(m2,m2)][Y+Y])
-                    cov_dict[name][X+Y] += so_cov.symmetrize(ps_dict["%sx%s"%(m1,m2)][X+Y]**2)
-                    cov_dict[name][X+Y] *= coupling
-                    cov_dict[name][X+Y] = np.dot(np.dot(mbb_inv["spin0xspin0"], cov_dict[name][X+Y]), mbb_inv["spin0xspin0"].T)
+        for name in spec_name_list:
+            m1, m2 = name.split("x")
+            cov_dict[name] = {}
+            for spec in spectra:
+                X, Y = spec
+                cov_dict[name][X+Y] = so_cov.symmetrize(ps_dict["%sx%s"%(m1,m1)][X+X]) * so_cov.symmetrize(ps_dict["%sx%s"%(m2,m2)][Y+Y])
+                cov_dict[name][X+Y] += so_cov.symmetrize(ps_dict["%sx%s"%(m1,m2)][X+Y]**2)
+                cov_dict[name][X+Y] *= coupling
+                cov_dict[name][X+Y] = np.dot(np.dot(mbb_inv, cov_dict[name][X+Y]), mbb_inv.T)
                     
     return cov_dict
 

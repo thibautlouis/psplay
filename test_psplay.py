@@ -1,4 +1,4 @@
-import psplay_new, psplay
+import psplay
 import time
 import pylab as plt, numpy as np
 
@@ -16,8 +16,9 @@ maps_info_list = [map0_info, map1_info]
 
 ps_method = "master"
 error_method = "master"
-compute_T_only = False
-lmax = 2000
+master_threshold = 500
+compute_T_only = True
+lmax = 1000
        
 t=time.time()
 spectra, spec_name_list, lb, ps_dict, cov_dict = psplay.compute_ps(patch,
@@ -32,7 +33,8 @@ spectra, spec_name_list, lb, ps_dict, cov_dict = psplay.compute_ps(patch,
                                                                    galactic_mask = galactic_mask,
                                                                    apo_radius_survey=1,
                                                                    compute_T_only = compute_T_only,
-                                                                   lmax = lmax)
+                                                                   lmax = lmax,
+                                                                   master_threshold = master_threshold)
 
 print("time: %f s" % (time.time()- t))
 
@@ -47,25 +49,16 @@ clth["TB"] = clth["TE"]*0
 
 if ps_method == "master" or ps_method == "pseudo":
 
-    if compute_T_only == True:
-        plt.semilogy()
-        plt.plot(lth[:lmax+500],clth["TT"][:lmax+500])
-        if cov_dict is not None:
-            plt.errorbar(lb, ps_dict["split0xsplit1"],np.sqrt(np.diag(cov_dict["split0xsplit1"])),fmt=".")
-        else:
-            plt.errorbar(lb, ps_dict["split0xsplit1"])
-        plt.show()
-    else:
-        for spec in spectra:
+    for spec in spectra:
         
-            if spec=="TT":
-                plt.semilogy()
-            plt.plot(lth[:lmax+500],clth[spec][:lmax+500])
-            if cov_dict is not None:
-                plt.errorbar(lb, ps_dict["split0xsplit1"][spec],np.sqrt(np.diag(cov_dict["split0xsplit1"][spec])),fmt=".")
-            else:
-                plt.errorbar(lb, ps_dict["split0xsplit1"][spec])
-            plt.show()
+        if spec=="TT":
+            plt.semilogy()
+        plt.plot(lth[:lmax+500],clth[spec][:lmax+500])
+        if cov_dict is not None:
+            plt.errorbar(lb, ps_dict["split0xsplit1"][spec],np.sqrt(np.diag(cov_dict["split0xsplit1"][spec])),fmt=".")
+        else:
+            plt.errorbar(lb, ps_dict["split0xsplit1"][spec])
+        plt.show()
 
 elif ps_method == "2dflat":
     ps_dict["split0xsplit1"].plot(power_of_ell=2)
