@@ -1,18 +1,9 @@
 from pspy import so_map, so_window, sph_tools, so_mcm, pspy_utils, so_spectra, so_cov, flat_tools
+from scipy.ndimage.morphology import distance_transform_edt
 from pixell import enmap
 import time
 import numpy as np, pylab as plt
 
-map0_info = {"name":"split0_IQU.fits", "data_type":"IQU", "id":"split0", "cal" : None}
-map1_info = {"name":"split1_IQU.fits", "data_type":"IQU", "id":"split1", "cal" : None}
-
-
-source_mask = {"name":"source_mask.fits", "apo_type":"C1" , "apo_radius": 0.3}
-galactic_mask = "mask_galactic_equatorial_car_halfarcmin.fits"
-
-patch = {"patch_type": "Rectangle", "patch_coordinate": [[-10,-20],[10,20]]}
-
-maps_info_list = [map0_info, map1_info]
 
 
 def compute_ps(patch,
@@ -95,10 +86,24 @@ def compute_ps(patch,
         apo_type_survey = "Rectangle"
         
     elif patch["patch_type"] == "Disk":
-        apo_type_survey = "C1"
-        # ToDO
+        dec_c, ra_c = patch["center"]
+        radius = patch["radius"]
+        eps = 0.1
+        car_box = [[dec_c - radius - eps, ra_c - radius - eps], [dec_c + radius + eps, ra_c + radius + eps]]
+        window = so_map.read_map(maps_info_list[0]["name"], car_box=car_box)
+        if maps_info_list[0]["data_type"] == "IQU":
+            window.data = window.data[0]
+            window.ncomp = 1
 
-        
+        window.data[:] = 1
+        y_c, x_c = enmap.sky2pix(window.data.shape, window.data.wcs, [dec_c * np.pi / 180, ra_c * np.pi / 180])
+        window.data[int(y_c),int(x_c)] = 0
+        dist = distance_transform_edt(window.data) * 0.5 * 1/60
+        window.data[dist < radius] = 0
+        window.data = 1 - window.data
+        apo_type_survey = "C1"
+
+
     if galactic_mask is not None:
         gal_mask = so_map.read_map(galactic_mask, car_box = car_box)
         window.data *= gal_mask.data
@@ -128,6 +133,7 @@ def compute_ps(patch,
                                                apo_radius_degree=source_mask["apo_radius"])
         window.data *= ps_mask.data
         del ps_mask
+            
     
     fsky = enmap.area(window.data.shape, window.data.wcs) / 4. / np.pi
     fsky *= np.mean(window.data)
@@ -231,13 +237,13 @@ def compute_ps(patch,
                                                                 spectra=spectra)
                                                                 
             elif ps_method == "2dflat":
-                ps_dict[spec_name] = flat_tools.power_from_fft(ht1, ht2)
+                lmap, ps_dict[spec_name] = flat_tools.power_from_fft(ht1, ht2)
             
             spec_name_list += [spec_name]
             
     if ps_method == "2dflat":
     
-        return spectra, spec_name_list, ps_dict
+        return spectra, spec_name_list, lmap , ps_dict, None
             
             
     if (error_method_1d is not None):
@@ -294,29 +300,8 @@ def compute_ps(patch,
         
     else:
     
-        return spectra, spec_name_list, lb, ps_dict
+        return spectra, spec_name_list, lb, ps_dict, None
    
      
      
-     
-t = time.time()
-spectra, spec_name_list, ps_dict = compute_ps(patch,
-                                              maps_info_list,
-                                              ps_method = "2dflat",
-                                              beam=None,
-                                              binning_file=None,
-                                              bin_size=40,
-                                              type="Dl",
-                                              source_mask = source_mask,
-                                              galactic_mask = galactic_mask,
-                                              apo_radius_survey=1,
-                                              compute_T_only = False,
-                                              lmax = 1000)
-                                                        
-print ("time to compute exact Cl: %0.2f"% (time.time()-t))
-
-ps_dict["split0xsplit1"].plot(power_of_ell=2)
-
-
-
 
