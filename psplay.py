@@ -5,7 +5,6 @@ import time
 import numpy as np, pylab as plt
 
 
-
 def compute_ps(patch,
                maps_info_list,
                ps_method = "master",
@@ -29,7 +28,7 @@ def compute_ps(patch,
     patch: dict
       a dict containing the patch type and coordinates
       if patch_type is "Rectangle" the coordinate are expected to be the 4 corners
-      if patch_type is "Disc" we expect the coordinate of the center and the radius in degree
+      if patch_type is "Disk" we expect the coordinate of the center and the radius in degree
     maps_info_list: list of dicts describing the data maps
       dictionnary should contain the name, the data type ("IQU" or "I") and optionally a calibration factor to apply to the map
       note that all map in the list should have the same data type
@@ -90,7 +89,7 @@ def compute_ps(patch,
         radius = patch["radius"]
         eps = 0.1
         car_box = [[dec_c - radius - eps, ra_c - radius - eps], [dec_c + radius + eps, ra_c + radius + eps]]
-        window = so_map.read_map(maps_info_list[0]["name"], car_box=car_box)
+        window = so_map.read_map(maps_info_list[0]["name"], car_box = car_box)
         if maps_info_list[0]["data_type"] == "IQU":
             window.data = window.data[0]
             window.ncomp = 1
@@ -102,7 +101,6 @@ def compute_ps(patch,
         window.data[dist < radius] = 0
         window.data = 1 - window.data
         apo_type_survey = "C1"
-
 
     if galactic_mask is not None:
         gal_mask = so_map.read_map(galactic_mask, car_box = car_box)
@@ -242,7 +240,6 @@ def compute_ps(patch,
             spec_name_list += [spec_name]
             
     if ps_method == "2dflat":
-    
         return spectra, spec_name_list, lmap , ps_dict, None
             
             
@@ -297,9 +294,7 @@ def compute_ps(patch,
                         cov_dict[name][X+Y] = np.dot(np.dot(mbb_inv["spin0xspin0"], cov_dict[name][X+Y]), mbb_inv["spin0xspin0"].T)
 
         return spectra, spec_name_list, lb, ps_dict, cov_dict
-        
     else:
-    
         return spectra, spec_name_list, lb, ps_dict, None
    
      
