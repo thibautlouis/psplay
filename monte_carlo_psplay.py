@@ -124,10 +124,11 @@ if ps_method is not "2dflat":
         plt.errorbar(ells, mean, std, fmt= ".")
         plt.show()
         
-        plt.semilogy()
-        plt.errorbar(ells, std, fmt= ".")
-        plt.plot(ells, np.sqrt(np.diag(cov_dict["split0xsplit1"][spec])))
-        plt.show()
+        if error_method is not None:
+            plt.semilogy()
+            plt.errorbar(ells, std, fmt= ".")
+            plt.plot(ells, np.sqrt(np.diag(cov_dict["split0xsplit1"][spec])))
+            plt.show()
 else:
 
     for spec in spectra:

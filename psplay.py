@@ -357,7 +357,6 @@ def get_covariance(window, lmax, spec_name_list, ps_dict, binning_file, error_me
                 cov_dict[name][X+Y] *= coupling
                 cov_dict[name][X+Y] = np.dot(np.dot(mbb_inv, cov_dict[name][X+Y]), mbb_inv.T)
     
-    
     else:
         cov_dict = None
         
@@ -458,7 +457,9 @@ def compute_ps(patch,
                                                          
                                                          
     if ps_method == "2dflat" or error_method == None:
+    
         return spectra, spec_name_list, ells , ps_dict, None
+        
     else:
         cov_dict = get_covariance(window,
                                   lmax,
