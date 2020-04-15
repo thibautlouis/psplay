@@ -271,7 +271,7 @@ def get_spectra(window, maps_info_list, car_box, type, lmax, binning_file, ps_me
                                                                 spectra=spectra)
                                                                 
             elif ps_method == "2dflat":
-                ells, ps_dict[spec_name] = flat_tools.power_from_fft(ht1, ht2)
+                ells, ps_dict[spec_name] = flat_tools.power_from_fft(ht1, ht2, type=type)
             
             spec_name_list += [spec_name]
             
