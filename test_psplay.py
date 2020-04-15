@@ -1,4 +1,4 @@
-import psplay
+import psplay_new, psplay
 import time
 import pylab as plt, numpy as np
 
@@ -15,14 +15,15 @@ maps_info_list = [map0_info, map1_info]
 
 
 ps_method = "master"
-error_method_1d = "master"
+error_method = "master"
 compute_T_only = False
 lmax = 2000
-                                                    
+       
+t=time.time()
 spectra, spec_name_list, lb, ps_dict, cov_dict = psplay.compute_ps(patch,
                                                                    maps_info_list,
                                                                    ps_method = ps_method,
-                                                                   error_method_1d =error_method_1d,
+                                                                   error_method =error_method,
                                                                    beam=None,
                                                                    binning_file=None,
                                                                    bin_size=40,
@@ -33,7 +34,7 @@ spectra, spec_name_list, lb, ps_dict, cov_dict = psplay.compute_ps(patch,
                                                                    compute_T_only = compute_T_only,
                                                                    lmax = lmax)
 
-
+print("time: %f s" % (time.time()- t))
 
 clth = {}
 lth, clth["TT"], clth["EE"], clth["BB"], clth["TE"] = np.loadtxt("bode_almost_wmap5_lmax_1e4_lensedCls_startAt2.dat", unpack=True)
