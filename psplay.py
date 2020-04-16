@@ -37,7 +37,7 @@ def create_window(patch, maps_info_list, apo_radius_survey, galactic_mask=None, 
             window.ncomp = 1
         window.data[:] = 0
         window.data[1:-1, 1:-1] = 1
-        apo_type_survey = "Rectangle"
+        apo_type_survey = "C1"
     
     elif patch["patch_type"] == "Disk":
         dec_c, ra_c = patch["center"]
@@ -70,11 +70,11 @@ def create_window(patch, maps_info_list, apo_radius_survey, galactic_mask=None, 
             split.ncomp = 1
         
         if split.ncomp == 1:
-            window.data[split.data==0] = 0
+            window.data[split.data==0] = 0.
+
         else:
             for i in range(split.ncomp):
-                window.data[split.data[i]==0] = 0
-
+                window.data[split.data[i]==0] = 0.
 
     window =  so_window.create_apodization(window,
                                            apo_type=apo_type_survey,
@@ -435,6 +435,7 @@ def compute_ps(patch,
                                     source_mask=source_mask,
                                     compute_T_only=compute_T_only)
                                     
+    
     mbb_inv = compute_mode_coupling(window,
                                     type,
                                     lmax,
